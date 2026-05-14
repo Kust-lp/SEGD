@@ -169,7 +169,7 @@ def HMTIR(args):
             img_n_copy = Noise()(**img_n_copy)
             ino = Image.fromarray(img_n_copy['image']).convert('L')
 
-            labels[f"{img_name}_{str(dweight)}"] = dweight
+            labels[f"{img_name}_{str(dweight)}.png"] = dweight
             cor_img.save(os.path.join(src_path, f"{img_name}_{str(dweight)}.png"))
             ic.save(os.path.join(opc, f"{img_name}_{str(dweight)}.png"))
             ib.save(os.path.join(opb, f"{img_name}_{str(dweight)}.png"))
