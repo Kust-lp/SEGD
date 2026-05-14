@@ -1,4 +1,4 @@
-# Breaking Degradation Coupling: A Structural Entropy–Guided Decoupled Framework and Benchmark for Infrared Enhancement [CVPR Finding 2026]
+# Breaking Degradation Coupling: A Structural Entropy–Guided Decoupled Framework and Benchmark for Infrared Enhancement (SEGD) [CVPR Finding 2026]
 ## Pu Li, Huafeng Li, Yafei Zhang ,Yu Liu, Wen Wang*
 ---
 
