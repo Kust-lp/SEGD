@@ -84,14 +84,38 @@ def Blur(p=1):
 
 
 
-def HM_TIR(args):
+
+def apply_degradations_random(img_list, degrad_names):
+    op_map = {
+        "contrast": LC,
+        "blur": Blur,
+        "noise": Noise,
+    }
+
+    order = degrad_names[:]
+    random.shuffle(order)
+
+    for degrad in order:
+        img_list = op_map[degrad]()(**img_list)
+
+    dweight = [
+        1.0 if "contrast" in degrad_names else 0.0,
+        1.0 if "blur" in degrad_names else 0.0,
+        1.0 if "noise" in degrad_names else 0.0,
+    ]
+
+    return img_list, dweight, order
+
+
+def HMTIR(args):
     random.seed(42)
     dataset_dir = args.input_dir
     all_imgs = glob.glob(os.path.join(dataset_dir, "imgs", "*.png"))
     random.shuffle(all_imgs)
-    train_imgP = all_imgs[:int(len(all_imgs)*0.8)]
-    test_imgP = all_imgs[int(len(all_imgs)*0.8):]
-    for split,imgP in zip(['train', 'test'], [train_imgP, test_imgP]):
+    train_imgP = all_imgs[:int(len(all_imgs) * 0.8)]
+    test_imgP = all_imgs[int(len(all_imgs) * 0.8):]
+
+    for split, imgP in zip(['train', 'test'], [train_imgP, test_imgP]):
         op = os.path.join(args.output_dir, split)
         src_path = os.path.join(op, "src")
         os.makedirs(src_path, exist_ok=True)
@@ -103,7 +127,6 @@ def HM_TIR(args):
         os.makedirs(opb, exist_ok=True)
         opn = os.path.join(op, "Noise")
         os.makedirs(opn, exist_ok=True)
-
 
         labels = {}
         random.shuffle(imgP)
@@ -118,39 +141,18 @@ def HM_TIR(args):
             img_b_copy = img_list.copy()
             img_n_copy = img_list.copy()
 
-
             if i <= count * 0.2:
                 degrad = random.choice(args.D_type)
-                if degrad == "Contrast":
-                    img_list = LC()(**img_list)
-                    dweight = [1., 0., 0.]
-                if degrad == "Blur":
-                    img_list = Blur()(**img_list)
-                    dweight = [0., 1., 0.]
-                if degrad == "Noise":
-                    img_list = Noise()(**img_list)
-                    dweight = [0., 0., 1]
+                img_list, dweight, order = apply_degradations_random(img_list, [degrad])
+
             elif i <= count * 0.5:
-                degrad = random.choice(args.D_type)
-                if degrad == "Contrast":
-                    img_list = Blur()(**img_list)
-                    img_list = Noise()(**img_list)
-                    dweight = [0., 1., 1.]
+                degrad_pair = random.sample(args.D_type, 2)
+                img_list, dweight, order = apply_degradations_random(img_list, degrad_pair)
 
-                if degrad == "Blur":
-                    img_list = LC()(**img_list)
-                    img_list = Noise()(**img_list)
-                    dweight = [ 1., 0., 1.]
-
-                if degrad == "Noise":
-                    img_list = LC()(**img_list)
-                    img_list = Blur()(**img_list)
-                    dweight = [1., 1., 0.]
             else:
-                img_list = LC()(**img_list)
-                img_list = Blur()(**img_list)
-                img_list = Noise()(**img_list)
-                dweight = [1, 1, 1]
+                degrad_triple = args.D_type[:]
+                img_list, dweight, order = apply_degradations_random(img_list, degrad_triple)
+
 
             gt = torch.from_numpy(img).float().div(255.0).unsqueeze(0).unsqueeze(0)
             deg = torch.from_numpy(img_list['image']).float().div(255.0).unsqueeze(0).unsqueeze(0)
@@ -167,18 +169,19 @@ def HM_TIR(args):
             img_n_copy = Noise()(**img_n_copy)
             ino = Image.fromarray(img_n_copy['image']).convert('L')
 
-            labels[img_name] = dweight
-            cor_img.save(os.path.join(src_path, img_name))
-            ic.save(os.path.join(opc, img_name))
-            ib.save(os.path.join(opb, img_name))
-            ino.save(os.path.join(opn, img_name))
-            shutil.copy(imgp, os.path.join(tgt_path, img_name))
+            labels[f"{img_name}_{str(dweight)}"] = dweight
+            cor_img.save(os.path.join(src_path, f"{img_name}_{str(dweight)}.png"))
+            ic.save(os.path.join(opc, f"{img_name}_{str(dweight)}.png"))
+            ib.save(os.path.join(opb, f"{img_name}_{str(dweight)}.png"))
+            ino.save(os.path.join(opn, f"{img_name}_{str(dweight)}.png"))
+            shutil.copy(os.path.join(args.input_dir,"imgs", img_name), os.path.join(tgt_path, f"{img_name}_{str(dweight)}.png"))
 
         df = pd.DataFrame.from_dict(labels, orient="index", columns=["contrast", "blur", "noise","strength"])
         df.index = df.index.astype(str)
         df.to_csv(os.path.join(op, "labels.csv"), index_label="name", index=True)
 
-def Night_TIR(args):
+
+def NightTIR(args):
     random.seed(42)
     dataset_dir = args.input_dir
     all_imgs = glob.glob(os.path.join(dataset_dir, "imgs", "*.JPG"))
@@ -202,36 +205,15 @@ def Night_TIR(args):
 
         if i <= count * 0.2:
             degrad = random.choice(args.D_type)
-            if degrad == "Contrast":
-                img_list = LC()(**img_list)
-                dweight = [1., 0., 0.]
-            if degrad == "Blur":
-                img_list = Blur()(**img_list)
-                dweight = [0., 1., 0.]
-            if degrad == "Noise":
-                img_list = Noise()(**img_list)
-                dweight = [0., 0., 1]
+            img_list, dweight, order = apply_degradations_random(img_list, [degrad])
+
         elif i <= count * 0.5:
-            degrad = random.choice(args.D_type)
-            if degrad == "Contrast":
-                img_list = Blur()(**img_list)
-                img_list = Noise()(**img_list)
-                dweight = [0., 1., 1.]
+            degrad_pair = random.sample(args.D_type, 2)
+            img_list, dweight, order = apply_degradations_random(img_list, degrad_pair)
 
-            if degrad == "Blur":
-                img_list = LC()(**img_list)
-                img_list = Noise()(**img_list)
-                dweight = [1., 0., 1.]
-
-            if degrad == "Noise":
-                img_list = LC()(**img_list)
-                img_list = Blur()(**img_list)
-                dweight = [1., 1., 0.]
         else:
-            img_list = LC()(**img_list)
-            img_list = Blur()(**img_list)
-            img_list = Noise()(**img_list)
-            dweight = [1, 1, 1]
+            degrad_triple = args.D_type[:]
+            img_list, dweight, order = apply_degradations_random(img_list, degrad_triple)
 
         gt = torch.from_numpy(img).float().div(255.0).unsqueeze(0).unsqueeze(0)
         deg = torch.from_numpy(img_list['image']).float().div(255.0).unsqueeze(0).unsqueeze(0)
@@ -241,25 +223,21 @@ def Night_TIR(args):
         labels[f"{img_name}.png"] = dweight
         cor_img.save(os.path.join(src_path, f"{img_name}.png"))
 
-
     df = pd.DataFrame.from_dict(labels, orient="index", columns=["contrast", "blur", "noise", "strength"])
     df.index = df.index.astype(str)
     df.to_csv(os.path.join(op, "labels.csv"), index_label="name", index=True)
 
-
-
-
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--data_dir", type=str, default="../../datasets/")
-    p.add_argument("--D_type", type=list, default=["Contrast", "Blur", "Noise"])
-    args =p.parse_args()
-    for dataset in ["HM-TIR","Night-TIR"]:
+    p.add_argument("--D_type", type=list, default=["contrast", "blur", "noise"])
+    args = p.parse_args()
+    for dataset in ["HM-TIR", "Night-TIR"]:
 
         args.input_dir = os.path.join(args.data_dir, dataset)
         if dataset == "HM-TIR":
             args.output_dir = os.path.join(args.data_dir, dataset)
-            HM_TIR(args)
+            HMTIR(args)
         else:
             args.output_dir = os.path.join(args.data_dir, dataset, "test")
-            Night_TIR(args)
+            NightTIR(args)
