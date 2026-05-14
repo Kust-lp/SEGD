@@ -10,7 +10,7 @@ The preview of our dataset is as follows.
 
 ---
 
-![preview](assets/preview.png)
+![preview](assets/NightTIR.png)
  
 ---
 
@@ -42,7 +42,7 @@ python ./codes/train/train_BackBone.py
 ### Evaluation
 The evaluation covers synthetic degradations on HM-TIR[1] and Night-TIR, as well as real-world degraded dataset AWMM[2]. You can either test using your own trained checkpoints or load our pretrained weights from ```./ckpts/model.pth```, and then run:
 ```
-python infer.py
+python ./codes/inference.py
 ```
 
 ### Citation
