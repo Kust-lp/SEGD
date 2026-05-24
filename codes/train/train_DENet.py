@@ -50,7 +50,7 @@ def Evimain():
     parser.add_argument('--weight_decay', type=float, default=1e-5)
     parser.add_argument('--warmup_ratio', type=float, default=0.2)
     parser.add_argument('--tau_init', type=float, default=1e-5)
-    parser.add_argument('--tau_final', type=float, default=0.1)
+    parser.add_argument('--tau_final', type=float, default=0.1 help="if normal: 0.1 if beta: 1")
     parser.add_argument('--device', type=str, default='cuda:0' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--checkpoint', type=str, default="../../ckpts")
     args = parser.parse_args()
