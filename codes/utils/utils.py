@@ -218,7 +218,7 @@ class MainLosses(nn.Module):
 
 class EvidentialBetaLoss(nn.Module):
 
-    def __init__(self, mode = "beta"):
+    def __init__(self, mode = "normal"):
         super().__init__()
         self.mode = mode
         self.bce = nn.BCEWithLogitsLoss()
@@ -266,9 +266,11 @@ class EvidentialBetaLoss(nn.Module):
 
         S = alpha + beta
         info['S'] = S.mean().item()
-        evi_error = torch.abs((target[:, -1] - p_hat) ** 2)
-        evi_penalty = evi_error * (alpha + beta) # Optional
-        loss_edl = torch.mean(logloss + anneal * kl )  # + 0.1*evi_penalty +  0.5*evi_penalty
+        # evi_error = torch.abs((target[:, -1] - p_hat) ** 2)
+        # evi_penalty = evi_error * (alpha + beta) # Optional
+        # loss_edl = torch.mean(logloss + anneal * kl + 0.1*evi_penalty ) #normal
+        # loss_edl = torch.mean(logloss + anneal * kl + 0.5*evi_penalty )  
+        loss_edl = torch.mean(logloss + anneal * kl )  
         info['edl'] = loss_edl.item()
         # loss_l1 = F.l1_loss(p_hat, target[:,-1])
         # info['l1'] = loss_l1.item()
